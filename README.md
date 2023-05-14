@@ -1,2 +1,41 @@
 # docker-registry-raspberrypi
-docker compose for registry and registry ui that can be run on raspberry pi4 arm64
+# docker compose for registry and registry ui that can be run on raspberry pi4 arm64
+
+version: '3'
+
+services:
+  registry:
+    restart: always
+    image: registry:2
+    environment:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+      VIRTUAL_PORT: 5000
+      VIRTUAL_HOST: 172.19.0.2
+      REGISTRY_STORAGE_DELETE_ENABLED: 'true'
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods: '[HEAD, GET, OPTIONS, DELETE]'
+    
+    networks:
+      - registry-ui-net
+    volumes:
+      - /media/SSD/docker/registry/data:/var/lib/registry
+      - /home/pi/app/docker/auth:/auth
+  ui:
+    image: joxit/docker-registry-ui:latest
+    ports:
+      - 5001:80
+    environment:     
+      - SINGLE_REGISTRY=true      
+      - REGISTRY_TITLE=Toto Docker Registry
+      - NGINX_PROXY_PASS_URL=http://registry:5000    
+      - SHOW_CATALOG_NB_TAGS=100
+      - CATALOG_ELEMENTS_LIMIT=100    
+      - DELETE_IMAGES=true      
+    depends_on:
+      - registry
+    networks:
+      - registry-ui-net
+
+networks:
+    registry-ui-net:
